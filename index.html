@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+body {
+  background: #ffffff;
+  min-height: 100vh;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+/* WORLD */
+#world {
+  position: absolute;
+  width: 2000px;
+  height: 2000px;
+  background-image: url('Sa.png');
+  background-size: 100px 100px;
+  background-repeat: repeat;
+  background-color: #fff;
+  transition: transform 0.1s ease-out;
+}
+
+/* PLAYER */
+#player-sprite {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* TOP UI */
+.top-bar {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.top-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: white;
+}
+
+.btn-recipe { background: #f0c05e; color: #352b18; }
+.btn-clear  { background: #f44336; }
+.btn-mix    { background: #ff9800; }
+
+/* COIN DISPLAY */
+#colinDisplayVisual {
+  position: fixed;
+  top: 60px;
+  left: 10px;
+  background: rgba(255,255,255,0.9);
+  padding: 5px 15px;
+  border: 1px solid gold;
+  color: #352b18;
+  border-radius: 20px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 1000;
+}
+
+/* PICKUP */
+.pickup-container {
+  position: fixed;
+  bottom: 30px;
+  left: 20px;
+  z-index: 1000;
+}
+
+.pickup-btn {
+  width: 80px;
+  height: 80px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* INVENTORY */
+.inventory-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+}
+
+.inventory {
+  background: rgba(255,255,255,0.9);
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+  border: 2px solid #ebc76e;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.slot {
+  width: 45px;
+  height: 45px;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+/* CONTROLS */
+.controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 50px);
+  gap: 5px;
+  z-index: 1000;
+}
+
+.ctrl {
+  width: 50px;
+  height: 50px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #333;
+}
+
+/* OBJECTS */
+.item {
+  position: absolute;
+  font-size: 2rem;
+  transform: translate(-50%, -50%);
+}
+
+.tree {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background-image: url('Sas.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="world">
+  <div id="trees"></div>
+  <div id="items"></div>
+</div>
+
+<img src="scb.png" id="player-sprite"
+onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=MixGuy'">
+
+<!-- TOP -->
+<div class="top-bar">
+  <button class="top-btn btn-recipe" onclick="showRecipes()">RECIPES📔</button>
+  <button class="top-btn btn-clear" onclick="resetInventory()">CLEAR🗑️</button>
+  <button class="top-btn btn-mix" onclick="craft()">MIX🌀</button>
+</div>
+
+<!-- COIN -->
+<div id="colinDisplayVisual">
+  <img src="colis.png" width="20">
+  <span id="colinCountVisual">0</span> Colin
+</div>
+
+<!-- PICKUP -->
+<div class="pickup-container">
+  <button class="pickup-btn" onclick="pickup()">✋<br>PICKUP</button>
+</div>
+
+<!-- INVENTORY -->
+<div class="inventory-container">
+  <div class="inventory">
+    <div class="slot">⚫</div>
+    <div class="slot">⚫</div>
+    <div class="slot">⚫</div>
+    <div class="slot">⚫</div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="ctrl" style="grid-column:2" onclick="move(0,-80)">↑</div>
+  <div class="ctrl" style="grid-column:1" onclick="move(-80,0)">←</div>
+  <div class="ctrl" style="grid-column:2" onclick="move(0,80)">↓</div>
+  <div class="ctrl" style="grid-column:3" onclick="move(80,0)">→</div>
+</div>
+
+<script>
+const player = { x: 1000, y: 1000 };
+
+let inventory = [null, null, null, null];
+let colinBalance = parseInt(localStorage.getItem('mixGuyColin') || '0');
+
+const rawItems = ['🍌','🍎','🥚','🍯','🔥','💧','🐟','🧂'];
+let activeItems = [];
+
+const recipes = {
+  '🍎🍯': { res: '🍏', val: 15 },
+  '🥚🔥': { res: '🍳', val: 10 },
+  '🍌💧': { res: '🥤', val: 12 },
+  '🐟🔥': { res: '🍗', val: 20 },
+  '🐟🧂': { res: '🍱', val: 25 },
+  '🍎🔥': { res: '🥧', val: 18 },
+  '🥚💧': { res: '🍜', val: 22 },
+  '🍯💧': { res: '🍺', val: 15 },
+  '🧂💧': { res: '🌊', val: 5 }
+};
+
+/* INIT */
+function init() {
+  document.getElementById('colinCountVisual').innerText = colinBalance;
+
+  const treeDiv = document.getElementById('trees');
+  for (let i = 0; i < 35; i++) {
+    const t = document.createElement('div');
+    t.className = 'tree';
+    t.style.left = (Math.random()*1900 + 50) + 'px';
+    t.style.top  = (Math.random()*1900 + 50) + 'px';
+    treeDiv.appendChild(t);
+  }
+
+  spawnItems(25);
+  updateCamera();
+  updateInventoryUI();
+}
+
+/* GAME LOGIC */
+function spawnItems(count) {
+  for (let i = 0; i < count; i++) {
+    activeItems.push({
+      emoji: rawItems[Math.floor(Math.random()*rawItems.length)],
+      x: Math.random()*1800 + 100,
+      y: Math.random()*1800 + 100,
+      collected: false
+    });
+  }
+  renderWorldItems();
+}
+
+function renderWorldItems() {
+  const container = document.getElementById('items');
+  container.innerHTML = '';
+
+  activeItems.forEach(item => {
+    if (!item.collected) {
+      const d = document.createElement('div');
+      d.className = 'item';
+      d.innerText = item.emoji;
+      d.style.left = item.x + 'px';
+      d.style.top  = item.y + 'px';
+      container.appendChild(d);
+    }
+  });
+}
+
+/* MOVEMENT */
+window.move = function(dx, dy) {
+  player.x = Math.max(50, Math.min(1950, player.x + dx));
+  player.y = Math.max(50, Math.min(1950, player.y + dy));
+  updateCamera();
+};
+
+function updateCamera() {
+  const ox = (window.innerWidth / 2) - player.x;
+  const oy = (window.innerHeight / 2) - player.y;
+  document.getElementById('world').style.transform =
+    `translate(${ox}px, ${oy}px)`;
+}
+
+/* ACTIONS */
+window.pickup = function() {
+  let found = false;
+
+  activeItems.forEach(item => {
+    if (!item.collected &&
+        Math.hypot(player.x - item.x, player.y - item.y) < 70) {
+
+      const idx = inventory.indexOf(null);
+      if (idx !== -1 && !found) {
+        inventory[idx] = item.emoji;
+        item.collected = true;
+        found = true;
+      }
+    }
+  });
+
+  if (found) {
+    updateInventoryUI();
+    renderWorldItems();
+
+    if (activeItems.filter(i => !i.collected).length < 8) {
+      spawnItems(10);
+    }
+  }
+};
+
+window.craft = function() {
+  const held = inventory.filter(i => i);
+
+  if (held.length < 2) {
+    alert("Grab 2 items!");
+    return;
+  }
+
+  const [a, b] = held;
+  const res = recipes[a + b] || recipes[b + a];
+
+  if (res) {
+    let removed = 0;
+
+    for (let i = 0; i < inventory.length; i++) {
+      if ((inventory[i] === a || inventory[i] === b) && removed < 2) {
+        inventory[i] = null;
+        removed++;
+      }
+    }
+
+    inventory[inventory.indexOf(null)] = res.res;
+
+    colinBalance += res.val;
+    localStorage.setItem('mixGuyColin', colinBalance);
+
+    document.getElementById('colinCountVisual').innerText = colinBalance;
+    alert("Success: " + res.res);
+  } else {
+    alert("Failed!");
+  }
+
+  updateInventoryUI();
+};
+
+/* UI */
+function updateInventoryUI() {
+  const items = inventory.filter(i => i);
+  inventory = [null, null, null, null];
+
+  items.forEach((item, i) => {
+    if (i < 4) inventory[i] = item;
+  });
+
+  document.querySelectorAll('.slot').forEach((slot, i) => {
+    slot.innerText = inventory[i] || '⚫';
+  });
+}
+
+window.resetInventory = function() {
+  inventory = [null, null, null, null];
+  updateInventoryUI();
+};
+
+window.showRecipes = function() {
+  let txt = "📜 RECIPES:\n";
+  for (let k in recipes) {
+    txt += `${k} = ${recipes[k].res}\n`;
+  }
+  alert(txt);
+};
+
+init();
+</script>
+
+</body>
+</html>
